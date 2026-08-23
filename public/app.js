@@ -1,13 +1,13 @@
 (function () {
-  const STORAGE_KEY = 'ff_progress_v2';
-  const MASTER_AT = 3;
+  const STORAGE_KEY = 'ff_progress_v3';
+  const STREAK_TARGET = 3;
 
   const cards = DECK.map((c, i) => ({ ...c, id: i }));
   const categories = [...new Set(cards.map(c => c.cat))];
 
   let progress = loadProgress();
   let currentCat = 'All';
-  let queue = [];
+  let queue = []; // { id, direction: 'fr' | 'tr', trLang: 'en' | 'de' }
   let current = null;
   let sessionStreak = 0;
   let isFlipped = false;
@@ -15,15 +15,17 @@
   const el = {
     card: document.getElementById('card'),
     cardWrap: document.getElementById('cardWrap'),
-    frontCat: document.getElementById('frontCat'),
+    frontLabel: document.getElementById('frontLabel'),
     frontText: document.getElementById('frontText'),
-    backEn: document.getElementById('backTextEn'),
-    backDe: document.getElementById('backTextDe'),
-    deWrap: document.getElementById('deWrap'),
+    backLabelMain: document.getElementById('backLabelMain'),
+    backTextMain: document.getElementById('backTextMain'),
+    backLabelSecondary: document.getElementById('backLabelSecondary'),
+    backTextSecondary: document.getElementById('backTextSecondary'),
     dontKnowBtn: document.getElementById('dontKnowBtn'),
     knowBtn: document.getElementById('knowBtn'),
     cardStreak: document.getElementById('cardStreak'),
     controls: document.getElementById('controls'),
+    directionStatus: document.getElementById('directionStatus'),
     emptyState: document.getElementById('emptyState'),
     resetCatBtn: document.getElementById('resetCatBtn'),
     categoryBar: document.getElementById('categoryBar'),
@@ -51,7 +53,7 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
   }
   function getP(id) {
-    if (!progress[id]) progress[id] = { streak: 0, mastered: false };
+    if (!progress[id]) progress[id] = { streak: 0, doneFr: false, doneTr: false, mastered: false };
     return progress[id];
   }
 
@@ -74,8 +76,20 @@
     return a;
   }
 
+  // Picks which direction to quiz a card in, weighted toward whichever
+  // direction hasn't been achieved yet so both get covered.
+  function pickDirection(id) {
+    const p = getP(id);
+    let direction;
+    if (p.doneFr && !p.doneTr) direction = Math.random() < 0.75 ? 'tr' : 'fr';
+    else if (p.doneTr && !p.doneFr) direction = Math.random() < 0.75 ? 'fr' : 'tr';
+    else direction = Math.random() < 0.5 ? 'fr' : 'tr';
+    const trLang = Math.random() < 0.5 ? 'en' : 'de';
+    return { id, direction, trLang };
+  }
+
   function buildQueue() {
-    queue = shuffle(activeCards(currentCat)).map(c => c.id);
+    queue = shuffle(activeCards(currentCat)).map(c => pickDirection(c.id));
   }
 
   function renderCategoryBar() {
@@ -105,6 +119,13 @@
     el.progressFill.style.width = totalInCat ? `${(masteredInCat / totalInCat) * 100}%` : '0%';
   }
 
+  function renderDirectionStatus(p) {
+    el.directionStatus.innerHTML = `
+      <span class="dir-chip ${p.doneFr ? 'done' : ''}">${p.doneFr ? '✅' : '⬜'} FR → EN/DE</span>
+      <span class="dir-chip ${p.doneTr ? 'done' : ''}">${p.doneTr ? '✅' : '⬜'} EN/DE → FR</span>
+    `;
+  }
+
   function nextCard() {
     isFlipped = false;
     el.card.classList.remove('flipped');
@@ -112,29 +133,44 @@
       current = null;
       el.cardWrap.hidden = true;
       el.controls.hidden = true;
+      el.directionStatus.hidden = true;
       el.emptyState.hidden = false;
       updateStats();
       return;
     }
     el.cardWrap.hidden = false;
     el.controls.hidden = false;
+    el.directionStatus.hidden = false;
     el.emptyState.hidden = true;
-    const id = queue.shift();
-    current = cards[id];
-    const p = getP(id);
-    el.frontCat.textContent = current.cat;
-    el.frontText.textContent = (current.emoji ? current.emoji + ' ' : '') + current.fr;
-    el.backEn.textContent = current.en;
-    if (current.de) {
-      el.deWrap.hidden = false;
-      el.backDe.hidden = false;
-      el.backDe.textContent = current.de;
+
+    const entry = queue.shift();
+    current = { ...cards[entry.id], direction: entry.direction, trLang: entry.trLang };
+    const p = getP(current.id);
+
+    if (current.direction === 'fr') {
+      el.frontLabel.textContent = 'FR';
+      el.frontText.textContent = (current.emoji ? current.emoji + ' ' : '') + current.fr;
+      el.backLabelMain.textContent = 'EN';
+      el.backTextMain.textContent = current.en;
+      el.backLabelSecondary.textContent = 'DE';
+      el.backTextSecondary.textContent = current.de;
+      el.backLabelSecondary.hidden = false;
+      el.backTextSecondary.hidden = false;
     } else {
-      el.deWrap.hidden = true;
-      el.backDe.hidden = true;
-      el.backDe.textContent = '';
+      const shown = current.trLang; // 'en' or 'de'
+      const other = shown === 'en' ? 'de' : 'en';
+      el.frontLabel.textContent = shown.toUpperCase();
+      el.frontText.textContent = current[shown];
+      el.backLabelMain.textContent = 'FR';
+      el.backTextMain.textContent = current.fr;
+      el.backLabelSecondary.textContent = other.toUpperCase();
+      el.backTextSecondary.textContent = current[other];
+      el.backLabelSecondary.hidden = false;
+      el.backTextSecondary.hidden = false;
     }
+
     el.cardStreak.textContent = p.streak > 0 ? `+${p.streak}` : '';
+    renderDirectionStatus(p);
     updateStats();
   }
 
@@ -149,20 +185,25 @@
     if (knew) {
       p.streak += 1;
       sessionStreak += 1;
-      if (p.streak >= MASTER_AT) {
+      if (current.direction === 'fr') p.doneFr = true;
+      else p.doneTr = true;
+
+      if (p.streak >= STREAK_TARGET && p.doneFr && p.doneTr) {
         p.mastered = true;
         burstConfetti();
         el.card.classList.add('pop');
         setTimeout(() => el.card.classList.remove('pop'), 400);
       } else {
-        queue.splice(Math.min(queue.length, 3 + Math.floor(Math.random() * 3)), 0, current.id);
+        const nextEntry = pickDirection(current.id);
+        queue.splice(Math.min(queue.length, 3 + Math.floor(Math.random() * 3)), 0, nextEntry);
       }
     } else {
       p.streak = 0;
       sessionStreak = 0;
       el.card.classList.add('shake');
       setTimeout(() => el.card.classList.remove('shake'), 400);
-      queue.splice(Math.min(queue.length, 2 + Math.floor(Math.random() * 2)), 0, current.id);
+      const nextEntry = pickDirection(current.id);
+      queue.splice(Math.min(queue.length, 2 + Math.floor(Math.random() * 2)), 0, nextEntry);
     }
     saveProgress();
     renderCategoryBar();
@@ -193,7 +234,7 @@
     }
     list.forEach(c => {
       const li = document.createElement('li');
-      li.innerHTML = `<div><div class="m-fr">${c.fr}</div><div class="m-en">${c.en}</div></div><span class="pill">${c.cat}</span>`;
+      li.innerHTML = `<div><div class="m-fr">${c.fr}</div><div class="m-en">${c.en} · ${c.de}</div></div><span class="pill">${c.cat}</span>`;
       el.masteredList.appendChild(li);
     });
   }
@@ -203,7 +244,7 @@
   el.knowBtn.addEventListener('click', () => answer(true));
   el.dontKnowBtn.addEventListener('click', () => answer(false));
   el.resetCatBtn.addEventListener('click', () => {
-    catCards(currentCat).forEach(c => { progress[c.id] = { streak: 0, mastered: false }; });
+    catCards(currentCat).forEach(c => { progress[c.id] = { streak: 0, doneFr: false, doneTr: false, mastered: false }; });
     saveProgress();
     buildQueue();
     renderCategoryBar();

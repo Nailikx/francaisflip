@@ -47,15 +47,15 @@
     <div class="card-wrap" id="cardWrap">
       <div class="card" id="card">
         <div class="face front">
-          <div class="pill" id="frontCat">Greetings</div>
+          <div class="pill" id="frontLabel">FR</div>
           <div class="face-text" id="frontText">Loading…</div>
           <div class="hint">tap card to flip</div>
         </div>
         <div class="face back">
-          <div class="pill pill-en">EN</div>
-          <div class="face-text" id="backTextEn"></div>
-          <div class="pill pill-de" id="deWrap">DE</div>
-          <div class="face-text small" id="backTextDe"></div>
+          <div class="pill pill-en" id="backLabelMain">EN</div>
+          <div class="face-text" id="backTextMain"></div>
+          <div class="pill pill-de" id="backLabelSecondary">DE</div>
+          <div class="face-text small" id="backTextSecondary"></div>
         </div>
       </div>
     </div>
@@ -71,7 +71,8 @@
     <button class="btn no" id="dontKnowBtn">❌ Didn't know</button>
     <button class="btn know" id="knowBtn">✅ I knew it <span class="mini-streak" id="cardStreak"></span></button>
   </div>
-  <p class="sub-hint">Get a card right <strong>3 times</strong> to send it to Mastered.</p>
+  <div class="direction-status" id="directionStatus"></div>
+  <p class="sub-hint">Get <strong>3 correct</strong>, including <strong>at least once in each direction</strong>, to send it to Mastered.</p>
 </main>
 
 <main id="masteredView" hidden>
