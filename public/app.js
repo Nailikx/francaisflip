@@ -92,6 +92,15 @@
     queue = shuffle(activeCards(currentCat)).map(c => pickDirection(c.id));
   }
 
+  // Reinserts an answered card at a random spot across the whole remaining
+  // queue (never right at the front) so the deck keeps mixing broadly
+  // instead of a small handful of cards looping in a tight retry window.
+  function requeue(entry) {
+    if (queue.length === 0) { queue.push(entry); return; }
+    const insertAt = 1 + Math.floor(Math.random() * queue.length);
+    queue.splice(insertAt, 0, entry);
+  }
+
   function renderCategoryBar() {
     const all = ['All', ...categories];
     el.categoryBar.innerHTML = '';
@@ -194,16 +203,14 @@
         el.card.classList.add('pop');
         setTimeout(() => el.card.classList.remove('pop'), 400);
       } else {
-        const nextEntry = pickDirection(current.id);
-        queue.splice(Math.min(queue.length, 3 + Math.floor(Math.random() * 3)), 0, nextEntry);
+        requeue(pickDirection(current.id));
       }
     } else {
       p.streak = 0;
       sessionStreak = 0;
       el.card.classList.add('shake');
       setTimeout(() => el.card.classList.remove('shake'), 400);
-      const nextEntry = pickDirection(current.id);
-      queue.splice(Math.min(queue.length, 2 + Math.floor(Math.random() * 2)), 0, nextEntry);
+      requeue(pickDirection(current.id));
     }
     saveProgress();
     renderCategoryBar();
