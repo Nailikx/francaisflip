@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FrançaisFlip 🇫🇷</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🇫🇷</text></svg>">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="bg-blobs" aria-hidden="true">
+  <span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span>
+</div>
+
+<header class="topbar">
+  <h1><span class="flag">🇫🇷</span> FrançaisFlip</h1>
+  <div class="stats">
+    <div class="stat"><span class="stat-num" id="statActive">0</span><span class="stat-label">to learn</span></div>
+    <div class="stat mastered"><span class="stat-num" id="statMastered">0</span><span class="stat-label">mastered</span></div>
+    <div class="stat"><span class="stat-num" id="statStreak">0</span><span class="stat-label">🔥 streak</span></div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-view="study">Study</button>
+  <button class="tab" data-view="mastered">Mastered</button>
+</nav>
+
+<main id="studyView">
+  <div class="category-bar" id="categoryBar"></div>
+
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+
+  <div class="stage">
+    <div class="card-wrap" id="cardWrap">
+      <div class="card" id="card">
+        <div class="face front">
+          <div class="pill" id="frontCat">Greetings</div>
+          <div class="face-text" id="frontText">Loading…</div>
+          <div class="hint">tap card to flip</div>
+        </div>
+        <div class="face back">
+          <div class="pill pill-en">EN</div>
+          <div class="face-text" id="backTextEn"></div>
+          <div class="pill pill-de" id="deWrap">DE</div>
+          <div class="face-text small" id="backTextDe"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty-state" id="emptyState" hidden>
+      <div class="empty-emoji">🎉</div>
+      <p>All cards in this category are mastered!</p>
+      <button class="btn ghost" id="resetCatBtn">Practice this category again</button>
+    </div>
+  </div>
+
+  <div class="controls" id="controls">
+    <button class="btn no" id="dontKnowBtn">❌ Didn't know</button>
+    <button class="btn know" id="knowBtn">✅ I knew it <span class="mini-streak" id="cardStreak"></span></button>
+  </div>
+  <p class="sub-hint">Get a card right <strong>3 times</strong> to send it to Mastered.</p>
+</main>
+
+<main id="masteredView" hidden>
+  <div class="mastered-toolbar">
+    <span id="masteredCount">0 cards mastered</span>
+    <button class="btn ghost small" id="resetAllBtn">Reset all progress</button>
+  </div>
+  <ul class="mastered-list" id="masteredList"></ul>
+</main>
+
+<div class="confetti-layer" id="confetti"></div>
+
+<script src="cards.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

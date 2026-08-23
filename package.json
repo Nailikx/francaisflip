@@ -1,0 +1,13 @@
+{
+  "name": "francaisflip",
+  "version": "1.0.0",
+  "description": "Personal French flashcard app with flip-card animation and mastery tracking.",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
